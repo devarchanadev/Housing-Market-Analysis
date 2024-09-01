@@ -1,0 +1,250 @@
+---
+title: "Housing Market Analysis"
+output: html_document
+date: "2024-01-20"
+---
+
+PROJECT OVERVIEW
+We will understand the housing market with various predictors and perform association rule mining
+
+First reading, processing the data
+```{r}
+library(readr)
+library(arules)
+library(corrplot)
+library(readxl)
+
+dats <- read.delim("housing.csv", sep = ",", header = TRUE)
+head(dats)
+
+dats$income_category <- cut(dats$median_income, breaks = c(-Inf, 3, Inf), labels = c("Low", "High"))
+
+#Processing 'ocean_proximity'
+dats$ocean_proximity <- as.factor(dats$ocean_proximity)
+
+#Identifying numeric columns
+numeric_cols <- sapply(dats, is.numeric)
+
+#Converting numeric columns to factors
+dats[, numeric_cols] <- lapply(dats[, numeric_cols], as.factor)
+
+#Processing 'median_income' column
+selected_cols <- c("ocean_proximity", "income_category", names(numeric_cols))
+dats <- dats[, selected_cols, drop = FALSE]
+
+#Creating the incidence matrix
+incidence_matrix <- as(dats, "transactions")
+
+write(incidence_matrix, file = "incidence_matrix.txt", sep = "\t")
+
+summary(incidence_matrix)
+
+#Inspecting the incidence matrix created
+inspect(incidence_matrix[1:10,])
+
+#Now visualazing the matrix
+itemFrequencyPlot(incidence_matrix, support = 0.05, cex.names = 0.8, col = "skyblue")
+
+itemFrequencyPlot(incidence_matrix, topN = 10, cex.names = 0.8, col = "pink")
+
+```
+#We can see that the itemfrequency plot shows the top rules for ocean proximity and income category being high and low.
+
+
+Check top rules
+```{r}
+my_params <- list(support = .005, confidence = .01, minlen = 2, maxlen = 6)
+my_rules <- apriori(incidence_matrix, parameter = my_params)
+inspect(sort(my_rules, by = "lift")[1:10])
+
+inspect(sort(my_rules, by = "confidence")[1:10])
+```
+
+
+
+
+Now lets prepare a suggestion for anyone who would want a house which is neither too expensive nor very low in price but would want in a nicer location may be closer to the ocean and all. This can be useful for brokers and similar companies to make suggestions.
+```{r}
+mydats <- read.delim("housing.csv", sep = ",", header = TRUE)
+
+#Discretizing the "median_house_value" into categories with readable labels
+mydats$median_house_value_categories <- cut(
+  mydats$median_house_value,
+  breaks = c(-Inf, 112000, 209000, 306000, 403000, Inf),
+  labels = c("<112k", "112k-209k", "209k-306k", "306k-403k", ">403k"),
+  include.lowest = TRUE
+)
+
+#Creating a new data frame with relevant columns
+data_for_rules <- mydats[, c("ocean_proximity", "median_house_value_categories")]
+
+
+trans_for_rules <- as(data_for_rules, "transactions")
+
+
+my_params <- list(support = .005, confidence = .01, minlen = 2, maxlen = 6)
+my_rules <- apriori(trans_for_rules, parameter = my_params)
+
+
+ocean_rules <- subset(my_rules, subset = grepl("ocean_proximity", labels(rhs(my_rules))))
+
+#Sorting rules by confidence in descending order
+ocean_rules <- sort(ocean_rules, by = "confidence", decreasing = TRUE)
+
+inspect(head(ocean_rules))
+
+```
+
+#The rules indicate associations between specific values of "longitude" and the "ocean_proximity" attribute.
+#Recommendations:
+
+#Based on the rules, it seems that certain ranges of "longitude" values are associated with the "ocean_proximity" being "<1H OCEAN."
+#So, we can recommend that the person focuses on homes with longitude values similar to those indicated in the rules.
+
+#Expectations:
+
+#The confidence values indicate the likelihood of the association being true. For example, a confidence of 0.9857143 for the first rule means that, historically, when the "longitude" is -118.35, there's a 98.57% chance that the "ocean_proximity" is "<1H OCEAN."
+
+
+#These are the observations
+#For a Lower Budget (<112k): homes in the "INLAND" area.
+#There is a high chance (approximately 76.47%) of finding an affordable home in an inland location but the trade of is that the distance to the ocean increases
+
+#For a Moderate Budget (209k-306k): homes in areas labeled "<1H OCEAN.
+#There is a high likelihood (approximately 60.65%) of finding suitable homes close to the ocean in this budget range.
+
+#For a Mid-Range Budget (306k-403k): homes in areas labeled "<1H OCEAN.
+#A majority of homes in this price range (approximately 55.45%) are located close to the ocean.
+
+#For a Higher Budget (>403k): homes in areas labeled "<1H OCEAN
+#Homes in this budget range (approximately 53.37%) are likely to be situated near the ocean.
+#While affordability is a consideration, there's still a moderate chance (approximately 48.34%) of finding homes close to the ocean.
+
+#These are the expectations and recommendations I will advice:
+
+#Recommendations:
+
+#Recommendation for Lower Budget (<112k):
+#The person should consider prioritizing affordability in the "INLAND" area if cost savings are crucial. However, be prepared for a compromise in terms of distance from the ocean.
+
+#Recommendation for Moderate to Higher Budgets (209k and above):
+#The person should focus their search on areas labeled "<1H OCEAN" to maximize the chances of finding a suitable home close to the ocean. This provides a good balance between budget considerations and the desire for coastal proximity.
+
+#Expectations:
+
+#Expectation for Lower Budget (<112k):
+#As the person focus on more affordable options in the "INLAND" area, the trade-off will involve an increase in distance from the ocean, providing cost savings but sacrificing proximity to coastal areas.
+
+#Expectation for Moderate to Higher Budgets (209k and above):
+#With increasing budget ranges, there's a positive correlation between budget and the likelihood of finding homes close to the ocean. The person can expect a better balance between affordability and proximity to the ocean, especially in areas labeled "<1H OCEAN."
+
+
+
+
+Lets see which area are more peaceful and less populated as they could be desired by some people
+```{r}
+summary(mydats$population)
+
+# Creating breaks and labels for population ranges
+population_breaks <- c(-Inf, 500, 1000, 1500, 2000, 2500, 3000, Inf)
+population_labels <- c("Very Low (<500)", "Low (500-1000)", "Moderate (1000-1500)", 
+                        "High (1500-2000)", "Very High (2000-2500)", "Extremely High (2500-3000)", "Ultra High (>3000)")
+
+#Discretizing the "population" into categories
+mydats$population_categories <- cut(mydats$population, breaks = population_breaks, labels = population_labels, include.lowest = TRUE)
+
+#Selecting columns of interest
+columns_of_interest <- c("population_categories", "housing_median_age", "median_income")
+
+#Creating a new data frame with relevant columns
+data_for_population <- mydats[, columns_of_interest]
+
+#Converting to transactions
+trans_for_population <- as(data_for_population, "transactions")
+
+#Setting parameters for association rule mining with lower support threshold
+population_params <- list(support = 0.001, confidence = 0.01, minlen = 2, maxlen = 6)
+
+#Mining association rules
+all_rules <- apriori(trans_for_population, parameter = population_params)
+
+#Filtering rules for "Low," "Very Low," and "Moderate" population areas
+low_population_rules <- subset(all_rules, subset = grepl("population_categories=Low", labels(lhs(all_rules))))
+very_low_population_rules <- subset(all_rules, subset = grepl("population_categories=Very Low", labels(lhs(all_rules))))
+moderate_population_rules <- subset(all_rules, subset = grepl("population_categories=Moderate", labels(lhs(all_rules))))
+
+#Combining rules using c function
+combined_rules <- c(low_population_rules, very_low_population_rules, moderate_population_rules)
+
+#Sorting rules by confidence in descending order
+combined_rules <- sort(combined_rules, by = "confidence", decreasing = TRUE)
+
+#Displaying the top 10 rules for "Low," "Very Low," and "Moderate" population areas
+inspect(head(combined_rules, 10))
+```
+
+
+
+#We see that, based on the association rules, here are some characteristics associated with low population areas: 
+#Low population areas with a median income between 2.89 and 4.24 are strongly associated with a housing median age between 35 and 52, with a confidence of 51.96%.
+
+
+#In low population areas, a lower median income range of 0.5 to 2.89 is also associated with a housing median age between 35 and 52, with a confidence of 46.85%.
+
+
+#Higher median income (4.24 to 15) in low population areas is still associated with a housing median age between 35 and 52, with a confidence of 45.31%.
+
+#In very low population areas with a median income between 0.5 and 2.89, there is a strong association with a housing median age between 35 and 52, with a confidence of 45.22%.
+
+#Low population areas, regardless of median income, often exhibit a housing median age between 35 and 52, with a confidence of 47.89%.
+
+#Therefore, We can say that low and very low population areas irrespective of the median income are strongly associated with the housing median age between 35 to 52
+
+
+
+# Introduction
+
+In this project, I performed an analysis of the housing market using various data preprocessing techniques and association rule mining. My goal was to uncover patterns and relationships within the data that could inform decision-making for potential homebuyers and real estate professionals. Through the use of association rules, I was able to provide insights and recommendations that cater to different budget levels and preferences, particularly focusing on proximity to the ocean and population density.
+
+
+# Data Preparation
+
+## Initial Data Processing
+To begin, I loaded the necessary libraries (readr, arules, corrplot, and readxl) and imported the housing dataset from a CSV file. The first step was to explore and preprocess the data to ensure it was ready for analysis. I introduced a new categorical variable, income_category, based on the median_income column, dividing it into "Low" and "High" income categories.
+
+Next, I processed the ocean_proximity variable, converting it into a factor, and identified the numeric columns in the dataset. These numeric columns were then transformed into factors to facilitate the creation of an incidence matrix. The incidence matrix, which is crucial for association rule mining, was created and inspected to verify its accuracy. I also visualized the frequency of items using itemFrequencyPlot, which helped to highlight the most significant rules related to ocean proximity and income levels.
+
+
+# Association Rule Mining
+
+## Identifying Key Rules
+With the processed data, I applied association rule mining to uncover patterns in the housing market. Using the Apriori algorithm, I generated rules with specific parameters for support, confidence, and the length of the rules. By sorting the rules by lift and confidence, I identified the top associations that could be leveraged for making recommendations. These rules provided valuable insights into how certain attributes, like ocean proximity and income category, are linked to other housing characteristics.
+
+
+# Recommendations for Homebuyers
+
+## Tailored Suggestions for Different Budgets
+Based on the rules generated, I formulated suggestions for potential homebuyers, especially those seeking homes that strike a balance between affordability and desirable locations, such as proximity to the ocean. For this, I discretized the median_house_value into categories, making it easier to understand the relationship between home prices and ocean proximity.
+
+I then created a new dataset focusing on ocean proximity and housing values and applied association rule mining to this subset. The rules I uncovered allowed me to provide targeted recommendations for different budget ranges. For example, for a lower budget (<112k), I suggested focusing on homes in inland areas, where affordability is higher but distance from the ocean increases. For moderate to higher budgets (209k and above), I recommended searching in areas labeled "<1H OCEAN," where there is a higher likelihood of finding homes close to the ocean.
+
+
+# Population Density Analysis
+
+## Exploring Preferences for Less Populated Areas
+In addition to ocean proximity, I explored another dimension of the housing market: population density. Some homebuyers may prioritize living in peaceful, less populated areas, so I analyzed the relationship between population density and other factors, such as housing median age and median income.
+
+By discretizing the population variable into categories (e.g., Very Low, Low, Moderate), I created a new dataset to explore these associations. I applied association rule mining with parameters tailored for lower support thresholds to capture even the less frequent but significant patterns. The resulting rules highlighted strong associations between low population areas and specific ranges of housing median age and median income.
+
+
+# Conclusions and Implications
+
+Insights for Real Estate Professionals and Buyers
+Through this analysis, I identified several key insights that can guide real estate professionals and homebuyers. For instance, low and very low population areas are strongly associated with housing that is older, typically with a median age between 35 and 52 years, regardless of the income level. This information can be valuable for those looking for quieter, less populated areas.
+
+Additionally, the association rules related to ocean proximity provide actionable insights for those with varying budget levels. By understanding these patterns, homebuyers can make more informed decisions, balancing their budget with their desire for coastal living.
+
+
+# Final Thoughts
+
+This project demonstrates the power of association rule mining in uncovering hidden patterns in the housing market. By processing and analyzing the data, I was able to derive meaningful insights that can directly impact decision-making for both homebuyers and real estate professionals. Whether it's finding an affordable home in a peaceful area or securing a property close to the ocean, these recommendations offer practical guidance based on data-driven analysis.
