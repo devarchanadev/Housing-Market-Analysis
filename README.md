@@ -1,10 +1,10 @@
 # 🏡 Housing Market Analysis - README
 
-[![Jump to Project Overview](https://img.shields.io/badge/Project%20Overview-📋-blue?style=for-the-badge&logo=read-the-docs)](#project-overview) 
-[![Jump to Business Impact](https://img.shields.io/badge/Business%20Impact-💼-blue?style=for-the-badge&logo=business)](#business-impact) 
-[![Jump to Insights](https://img.shields.io/badge/Insights%20and%20Recommendations-🔍-blue?style=for-the-badge&logo=search)](#insights-and-recommendations) 
-[![Jump to Tools](https://img.shields.io/badge/Tools%20and%20Data-🛠️-blue?style=for-the-badge&logo=tools)](#tools-and-data) 
-[![Jump to Results](https://img.shields.io/badge/Results%20and%20Conclusions-📊-blue?style=for-the-badge&logo=analytics)](#results-and-conclusions)
+[![Jump to Project Overview](https://img.shields.io/badge/Project%20Overview-📋-blue?style=for-the-badge&logo=read-the-docs)](#-project-overview) 
+[![Jump to Business Impact](https://img.shields.io/badge/Business%20Impact-💼-blue?style=for-the-badge&logo=business)](#-business-impact) 
+[![Jump to Insights](https://img.shields.io/badge/Insights%20and%20Recommendations-🔍-blue?style=for-the-badge&logo=search)](#-insights-and-recommendations) 
+[![Jump to Tools](https://img.shields.io/badge/Tools%20and%20Data-🛠️-blue?style=for-the-badge&logo=tools)](#-tools-and-data) 
+[![Jump to Results](https://img.shields.io/badge/Results%20and%20Conclusions-📊-blue?style=for-the-badge&logo=analytics)](#-results-and-conclusions)
 
 [![GitHub Repo](https://img.shields.io/badge/Visit-GitHub_Repo-181717?style=for-the-badge&logo=github)](https://github.com/devarchanadev/Housing-Market-Analysis)
 [![Dataset Source](https://img.shields.io/badge/Download-Dataset_Source-20BEFF?style=for-the-badge&logo=kaggle)](https://www.kaggle.com)
