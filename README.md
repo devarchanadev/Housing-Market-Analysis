@@ -79,7 +79,7 @@ This analysis solves the problem of navigating the complex housing market, helpi
 - **R**: For data processing, analysis, and visualization.
 - **Association Rule Mining**: To discover patterns and associations in the housing market data.
 
-### 📊 Data Source
+### 📊 Data Processing
 
 - **Dataset**: Housing market data from a CSV file.
 - **Data Cleaning**: Included categorization of income levels, conversion of numeric columns to factors, and discretization of key variables.
